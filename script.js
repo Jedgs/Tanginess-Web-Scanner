@@ -23,9 +23,16 @@ const manualScanButton = document.getElementById("manualScanButton");
 const confirmOrderButton = document.getElementById("confirmOrderButton");
 const orderDetailsContainer = document.getElementById("orderDetailsContainer");
 const scanLogsContainer = document.getElementById("scanLogsContainer");
+const scannerStatus = document.getElementById("scannerStatus");
+const qrImageInput = document.getElementById("qrImageInput");
+const scanImageButton = document.getElementById("scanImageButton");
 
 function formatMoney(amount) {
   return "Php " + amount;
+}
+
+function setScannerStatus(message) {
+  scannerStatus.textContent = message;
 }
 
 // Manual Insertion Algorithm
@@ -129,17 +136,97 @@ function isValidOrderObject(order) {
   return true;
 }
 
+function isCompactQrPayload(payload) {
+  if (payload === null) {
+    return false;
+  }
+
+  if (typeof payload.o === "undefined") {
+    return false;
+  }
+
+  if (typeof payload.i === "undefined") {
+    return false;
+  }
+
+  return true;
+}
+
+// Manual Traversal Algorithm
+// Purpose: Convert compact QR data into the same order object used by the cashier display.
+// Time Complexity: O(n * m), dahil bawat item at toppings ay tinatraverse.
+// Space Complexity: O(n * m), dahil gumagawa ng readable order copy.
+function convertCompactPayloadToOrder(payload) {
+  const orderItems = [];
+
+  for (let itemIndex = 0; itemIndex < payload.i.length; itemIndex++) {
+    const compactItem = payload.i[itemIndex];
+    const selectedToppings = [];
+
+    for (let toppingIndex = 0; toppingIndex < compactItem.st.length; toppingIndex++) {
+      const compactTopping = compactItem.st[toppingIndex];
+
+      selectedToppings[selectedToppings.length] = {
+        toppingId: compactTopping.id,
+        toppingName: compactTopping.n,
+        category: compactTopping.c,
+        extraPrice: compactTopping.e,
+        premiumPrice: compactTopping.p,
+        isIncluded: compactTopping.inc
+      };
+    }
+
+    orderItems[orderItems.length] = {
+      cartItemId: compactItem.ci,
+      cupDetails: {
+        cupId: compactItem.c.id,
+        cupName: compactItem.c.n,
+        cupType: compactItem.c.t,
+        includedToppings: compactItem.c.it,
+        basePrice: compactItem.c.bp
+      },
+      selectedToppings: selectedToppings,
+      quantity: compactItem.q,
+      extraToppingCount: compactItem.etc,
+      extraToppingTotal: compactItem.ett,
+      premiumToppingTotal: compactItem.ptt,
+      plainFroyoAddOn: compactItem.pfa,
+      unitTotal: compactItem.ut,
+      lineTotal: compactItem.lt
+    };
+  }
+
+  return {
+    orderId: payload.o,
+    customerId: payload.cid,
+    customerName: payload.cn,
+    orderType: payload.ot,
+    orderStatus: payload.os,
+    paymentStatus: payload.ps,
+    items: orderItems,
+    totalCupQuantity: payload.tq,
+    orderSubtotal: payload.st,
+    createdAt: payload.d
+  };
+}
+
 function readQrPayload(qrText) {
   let scannedOrder = null;
 
   try {
     scannedOrder = JSON.parse(qrText);
   } catch (error) {
+    setScannerStatus("Invalid QR data. The QR text is not a valid order.");
     alert("Invalid QR data. The QR text is not a valid order.");
     return;
   }
 
+  if (isCompactQrPayload(scannedOrder) === true) {
+    scannedOrder = convertCompactPayloadToOrder(scannedOrder);
+  }
+
   if (isValidOrderObject(scannedOrder) === false) {
+    setScannerStatus("Invalid Tanginess order QR.");
     alert("Invalid Tanginess order QR.");
     return;
   }
@@ -152,6 +239,7 @@ function readQrPayload(qrText) {
 
   displayScannedOrder(scannedOrder);
   displayScanLogs();
+  setScannerStatus("Order scanned successfully: " + scannedOrder.orderId);
 }
 
 // Manual Traversal Algorithm
@@ -251,6 +339,7 @@ function confirmScannedOrder() {
 
 async function startScanner() {
   if (typeof Html5Qrcode === "undefined") {
+    setScannerStatus("QR scanner library did not load.");
     alert("QR scanner library did not load.");
     return;
   }
@@ -262,14 +351,30 @@ async function startScanner() {
   html5QrCode = new Html5Qrcode("reader");
 
   try {
+    setScannerStatus("Opening camera...");
+    const cameras = await Html5Qrcode.getCameras();
+
+    if (cameras.length === 0) {
+      setScannerStatus("No camera detected.");
+      alert("No camera detected.");
+      return;
+    }
+
+    let selectedCameraId = cameras[0].id;
+
+    for (let index = 0; index < cameras.length; index++) {
+      selectedCameraId = cameras[index].id;
+    }
+
     await html5QrCode.start(
-      { facingMode: "environment" },
+      selectedCameraId,
       {
-        fps: 10,
+        fps: 15,
         qrbox: {
-          width: 250,
-          height: 250
-        }
+          width: 320,
+          height: 320
+        },
+        aspectRatio: 1.7777778
       },
       function onScanSuccess(decodedText) {
         readQrPayload(decodedText);
@@ -278,7 +383,9 @@ async function startScanner() {
     );
 
     isScannerRunning = true;
+    setScannerStatus("Scanner is running. Point the camera at the QR code.");
   } catch (error) {
+    setScannerStatus("Camera scanner cannot start. Use localhost and allow camera permission.");
     alert("Camera scanner cannot start. You can paste the QR text manually.");
   }
 }
@@ -294,6 +401,7 @@ async function stopScanner() {
 
   await html5QrCode.stop();
   isScannerRunning = false;
+  setScannerStatus("Scanner stopped.");
 }
 
 function readManualQr() {
@@ -301,11 +409,40 @@ function readManualQr() {
   readQrPayload(qrText);
 }
 
+async function scanQrImage() {
+  if (typeof Html5Qrcode === "undefined") {
+    setScannerStatus("QR scanner library did not load.");
+    alert("QR scanner library did not load.");
+    return;
+  }
+
+  if (qrImageInput.files.length === 0) {
+    alert("Please choose a QR image first.");
+    return;
+  }
+
+  if (isScannerRunning === true) {
+    await stopScanner();
+  }
+
+  const imageScanner = new Html5Qrcode("reader");
+
+  try {
+    setScannerStatus("Scanning QR image...");
+    const decodedText = await imageScanner.scanFile(qrImageInput.files[0], true);
+    readQrPayload(decodedText);
+  } catch (error) {
+    setScannerStatus("QR image could not be read. Try a clearer/larger QR screenshot.");
+    alert("QR image could not be read. Try a clearer/larger QR screenshot.");
+  }
+}
+
 function startAdminModule() {
   startScannerButton.addEventListener("click", startScanner);
   stopScannerButton.addEventListener("click", stopScanner);
   manualScanButton.addEventListener("click", readManualQr);
   confirmOrderButton.addEventListener("click", confirmScannedOrder);
+  scanImageButton.addEventListener("click", scanQrImage);
   displayScanLogs();
 }
 
