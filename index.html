@@ -11,10 +11,20 @@
 
   <section>
     <h3>Camera Scanner</h3>
+    <p id="scannerStatus">Scanner is not running.</p>
     <div id="reader"></div>
     <br>
     <button type="button" id="startScannerButton">Start Scanner</button>
     <button type="button" id="stopScannerButton">Stop Scanner</button>
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>QR Image Test</h3>
+    <p>Use this if camera cannot read the QR clearly. Upload a screenshot/photo of the QR.</p>
+    <input type="file" id="qrImageInput" accept="image/*">
+    <button type="button" id="scanImageButton">Scan QR Image</button>
   </section>
 
   <hr>
