@@ -351,42 +351,34 @@ async function startScanner() {
   html5QrCode = new Html5Qrcode("reader");
 
   try {
-    setScannerStatus("Opening camera...");
-    const cameras = await Html5Qrcode.getCameras();
-
-    if (cameras.length === 0) {
-      setScannerStatus("No camera detected.");
-      alert("No camera detected.");
-      return;
-    }
-
-    let selectedCameraId = cameras[0].id;
-
-    for (let index = 0; index < cameras.length; index++) {
-      selectedCameraId = cameras[index].id;
-    }
+    setScannerStatus("Opening camera. Allow camera permission if the browser asks.");
 
     await html5QrCode.start(
-      selectedCameraId,
       {
-        fps: 15,
+        facingMode: "environment"
+      },
+      {
+        fps: 20,
         qrbox: {
-          width: 320,
-          height: 320
+          width: 360,
+          height: 360
         },
-        aspectRatio: 1.7777778
+        disableFlip: false
       },
       function onScanSuccess(decodedText) {
         readQrPayload(decodedText);
         stopScanner();
+      },
+      function onScanFailure() {
+        setScannerStatus("Scanning... keep the whole QR inside the box and avoid glare.");
       }
     );
 
     isScannerRunning = true;
-    setScannerStatus("Scanner is running. Point the camera at the QR code.");
+    setScannerStatus("Scanner is running. Put the whole QR inside the square box.");
   } catch (error) {
-    setScannerStatus("Camera scanner cannot start. Use localhost and allow camera permission.");
-    alert("Camera scanner cannot start. You can paste the QR text manually.");
+    setScannerStatus("Camera cannot start/read. Open this page using localhost or HTTPS, then allow camera permission.");
+    alert("Camera scanner cannot start. Open this page using localhost or HTTPS, then allow camera permission.");
   }
 }
 
