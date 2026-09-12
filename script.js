@@ -16,16 +16,12 @@ let html5QrCode = null;
 let isScannerRunning = false;
 
 const reader = document.getElementById("reader");
-const manualQrInput = document.getElementById("manualQrInput");
 const startScannerButton = document.getElementById("startScannerButton");
 const stopScannerButton = document.getElementById("stopScannerButton");
-const manualScanButton = document.getElementById("manualScanButton");
 const confirmOrderButton = document.getElementById("confirmOrderButton");
 const orderDetailsContainer = document.getElementById("orderDetailsContainer");
 const scanLogsContainer = document.getElementById("scanLogsContainer");
 const scannerStatus = document.getElementById("scannerStatus");
-const qrImageInput = document.getElementById("qrImageInput");
-const scanImageButton = document.getElementById("scanImageButton");
 
 function formatMoney(amount) {
   return "Php " + amount;
@@ -396,45 +392,10 @@ async function stopScanner() {
   setScannerStatus("Scanner stopped.");
 }
 
-function readManualQr() {
-  const qrText = manualQrInput.value;
-  readQrPayload(qrText);
-}
-
-async function scanQrImage() {
-  if (typeof Html5Qrcode === "undefined") {
-    setScannerStatus("QR scanner library did not load.");
-    alert("QR scanner library did not load.");
-    return;
-  }
-
-  if (qrImageInput.files.length === 0) {
-    alert("Please choose a QR image first.");
-    return;
-  }
-
-  if (isScannerRunning === true) {
-    await stopScanner();
-  }
-
-  const imageScanner = new Html5Qrcode("reader");
-
-  try {
-    setScannerStatus("Scanning QR image...");
-    const decodedText = await imageScanner.scanFile(qrImageInput.files[0], true);
-    readQrPayload(decodedText);
-  } catch (error) {
-    setScannerStatus("QR image could not be read. Try a clearer/larger QR screenshot.");
-    alert("QR image could not be read. Try a clearer/larger QR screenshot.");
-  }
-}
-
 function startAdminModule() {
   startScannerButton.addEventListener("click", startScanner);
   stopScannerButton.addEventListener("click", stopScanner);
-  manualScanButton.addEventListener("click", readManualQr);
   confirmOrderButton.addEventListener("click", confirmScannedOrder);
-  scanImageButton.addEventListener("click", scanQrImage);
   displayScanLogs();
 }
 
