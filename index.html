@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tanginess Admin - QR Scanner</title>
+</head>
+<body>
+  <h1>Tanginess Admin</h1>
+  <h2>Cashier QR Scanner</h2>
+
+  <section>
+    <h3>Camera Scanner</h3>
+    <div id="reader"></div>
+    <br>
+    <button type="button" id="startScannerButton">Start Scanner</button>
+    <button type="button" id="stopScannerButton">Stop Scanner</button>
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>Manual QR Test</h3>
+    <p>Use this if camera scanning is not available. Paste the QR text from the customer order.</p>
+    <textarea id="manualQrInput" rows="8" cols="80"></textarea>
+    <br>
+    <button type="button" id="manualScanButton">Read QR Details</button>
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>Scanned Order Details</h3>
+    <div id="orderDetailsContainer">
+      <p>No order scanned yet.</p>
+    </div>
+    <button type="button" id="confirmOrderButton">Confirm Order</button>
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>Scan Logs</h3>
+    <div id="scanLogsContainer">
+      <p>No scanned orders yet.</p>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="script.js"></script>
+</body>
+</html>
